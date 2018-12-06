@@ -16,6 +16,7 @@ package brickhouse.udf.json;
  *
  **/
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.hive.ql.exec.Description;
 import org.apache.hadoop.hive.ql.exec.UDFArgumentException;
 import org.apache.hadoop.hive.ql.metadata.HiveException;
@@ -80,6 +81,7 @@ public class ToJsonUDF extends GenericUDF {
 
     private interface InspectorHandle {
         abstract public void generateJson(JsonGenerator gen, Object obj) throws JsonGenerationException, IOException;
+        abstract public boolean isEmpty(Object obj) throws JsonGenerationException, IOException;
     }
 
     ;
@@ -123,6 +125,11 @@ public class ToJsonUDF extends GenericUDF {
             }
         }
 
+        @Override
+        public boolean isEmpty(Object obj) throws JsonGenerationException, IOException {
+            return mapInspector.getMap(obj).isEmpty();
+        }
+
     }
 
 
@@ -153,6 +160,7 @@ public class ToJsonUDF extends GenericUDF {
 
                 for (int i = 0; i < fieldNames.size(); ++i) {
                     String fieldName = fieldNames.get(i);
+                    if (structObjs.get(i) == null || fieldInspectorHandles.get(i).isEmpty(structObjs.get(i))) continue;
                     if (convertFlag) {
                         gen.writeFieldName(FromJsonUDF.ToCamelCase(fieldName));
                     } else {
@@ -162,6 +170,11 @@ public class ToJsonUDF extends GenericUDF {
                 }
                 gen.writeEndObject();
             }
+        }
+
+        @Override
+        public boolean isEmpty(Object obj) throws JsonGenerationException, IOException {
+            return structInspector.getStructFieldsDataAsList(obj).isEmpty();
         }
 
     }
@@ -191,6 +204,11 @@ public class ToJsonUDF extends GenericUDF {
             }
         }
 
+        @Override
+        public boolean isEmpty(Object obj) throws JsonGenerationException, IOException {
+            return arrayInspector.getList(obj).isEmpty();
+        }
+
     }
 
     private class StringInspectorHandle implements InspectorHandle {
@@ -211,6 +229,12 @@ public class ToJsonUDF extends GenericUDF {
             }
         }
 
+        @Override
+        public boolean isEmpty(Object obj) throws JsonGenerationException, IOException {
+            String value = strInspector.getPrimitiveJavaObject(obj);
+            return StringUtils.isBlank(value) || "null".equalsIgnoreCase(value);
+        }
+
     }
 
     private class IntInspectorHandle implements InspectorHandle {
@@ -228,6 +252,11 @@ public class ToJsonUDF extends GenericUDF {
                 int num = intInspector.get(obj);
                 gen.writeNumber(num);
             }
+        }
+
+        @Override
+        public boolean isEmpty(Object obj) throws JsonGenerationException, IOException {
+            return false;
         }
     }
 
@@ -247,6 +276,11 @@ public class ToJsonUDF extends GenericUDF {
                 gen.writeNumber(num);
             }
         }
+
+        @Override
+        public boolean isEmpty(Object obj) throws JsonGenerationException, IOException {
+            return false;
+        }
     }
 
     private class LongInspectorHandle implements InspectorHandle {
@@ -265,6 +299,10 @@ public class ToJsonUDF extends GenericUDF {
                 gen.writeNumber(num);
             }
         }
+        @Override
+        public boolean isEmpty(Object obj) throws JsonGenerationException, IOException {
+            return false;
+        }
     }
 
     private class ShortInspectorHandle implements InspectorHandle {
@@ -282,6 +320,10 @@ public class ToJsonUDF extends GenericUDF {
                 short num = shortInspector.get(obj);
                 gen.writeNumber(num);
             }
+        }
+        @Override
+        public boolean isEmpty(Object obj) throws JsonGenerationException, IOException {
+            return false;
         }
     }
 
@@ -302,6 +344,10 @@ public class ToJsonUDF extends GenericUDF {
                 gen.writeNumber(num);
             }
         }
+        @Override
+        public boolean isEmpty(Object obj) throws JsonGenerationException, IOException {
+            return false;
+        }
     }
 
 
@@ -321,6 +367,10 @@ public class ToJsonUDF extends GenericUDF {
                 gen.writeNumber(num);
             }
         }
+        @Override
+        public boolean isEmpty(Object obj) throws JsonGenerationException, IOException {
+            return false;
+        }
     }
 
     private class BooleanInspectorHandle implements InspectorHandle {
@@ -339,6 +389,10 @@ public class ToJsonUDF extends GenericUDF {
                 gen.writeBoolean(tf);
             }
         }
+        @Override
+        public boolean isEmpty(Object obj) throws JsonGenerationException, IOException {
+            return false;
+        }
     }
 
     private class BinaryInspectorHandle implements InspectorHandle {
@@ -356,6 +410,12 @@ public class ToJsonUDF extends GenericUDF {
                 byte[] bytes = binaryInspector.getPrimitiveJavaObject(obj);
                 gen.writeBinary(bytes);
             }
+        }
+
+        @Override
+        public boolean isEmpty(Object obj) throws JsonGenerationException, IOException {
+            byte[] bytes = binaryInspector.getPrimitiveJavaObject(obj);
+            return bytes.length == 0;
         }
     }
 
@@ -376,6 +436,11 @@ public class ToJsonUDF extends GenericUDF {
                 String timeStr = isoFormatter.print(timestamp.getTime());
                 gen.writeString(timeStr);
             }
+        }
+
+        @Override
+        public boolean isEmpty(Object obj) throws JsonGenerationException, IOException {
+            return false;
         }
     }
 
